@@ -37,10 +37,10 @@ def max_pool_2x2(x):
 x = tf.placeholder(tf.float32, shape=[None, 784])
 y_ = tf.placeholder(tf.float32, shape=[None, 10])
 
-W_conv1 = weight_variable([5, 5, 1, 8])
+W_conv1 = weight_variable([5, 5, 1, 32])
 # variable_summaries(W_conv1, 'conv1' + '/weights')
 
-b_conv1 = bias_variable([8])
+b_conv1 = bias_variable([32])
 # variable_summaries(b_conv1, 'conv1' + '/bias')
 
 x_image = tf.reshape(x, [-1,28,28,1])
@@ -49,34 +49,36 @@ x_image = tf.reshape(x, [-1,28,28,1])
 h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
 # tf.histogram_summary('conv1' + '/activations', h_conv1)
 
-h_pool1 = max_pool_2x2(h_conv1)
 
-W_conv2 = weight_variable([5, 5, 8, 16])
+
+W_conv2 = weight_variable([5, 5, 32, 8])
 # variable_summaries(W_conv2, 'conv2' + '/weights')
 
-b_conv2 = bias_variable([16])
+b_conv2 = bias_variable([8])
 # variable_summaries(b_conv2, 'conv2' + '/bias')
 
 h_conv2 = tf.nn.relu(conv2d(h_conv1, W_conv2) + b_conv2)
 
+h_pool1 = max_pool_2x2(h_conv2)
 
-W_conv3 = weight_variable([5, 5, 16, 32])
-b_conv3 = bias_variable([32])
+W_conv3 = weight_variable([5, 5, 8, 8])
+b_conv3 = bias_variable([8])
 
-h_conv3 = tf.nn.relu(conv2d(h_conv2, W_conv3) + b_conv3)
+h_conv3 = tf.nn.relu(conv2d(h_pool1, W_conv3) + b_conv3)
 
+h_pool2 = max_pool_2x2(h_conv3)
 
 # tf.histogram_summary('conv2' + '/activations', h_conv2)
 
 # h_pool2 = max_pool_2x2(h_conv2)
 
-W_fc1 = weight_variable([28 * 28 * 32, 1024])
+W_fc1 = weight_variable([7 * 7 * 8, 1024])
 # variable_summaries(W_fc1, 'fc1' + '/weights')
 
 b_fc1 = bias_variable([1024])
 # variable_summaries(b_fc1, 'fc1' + '/bias')
 
-h_pool2_flat = tf.reshape(h_conv3, [-1, 28*28*32])
+h_pool2_flat = tf.reshape(h_pool2, [-1, 7*7*8])
 h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 # tf.histogram_summary('fc1' + '/activations', h_fc1)
 
@@ -105,7 +107,7 @@ tf.initialize_all_variables().run()
 for i in range(20001):
   batch = mnist.train.next_batch(100)
   print i
-  if i%50 == 0:
+  if i%100 == 0:
     summary, acc = sess.run([merged, accuracy], feed_dict={
     x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0})
     test_writer.add_summary(summary, i)
