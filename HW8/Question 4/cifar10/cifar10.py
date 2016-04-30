@@ -222,7 +222,7 @@ def inference(images):
   with tf.variable_scope('conv3') as scope:
     kernel = _variable_with_weight_decay('weights', shape=[5, 5, 64, 128],
                                          stddev=1e-4, wd=0.0)
-    conv = tf.nn.conv2d(norm1, kernel, [1, 1, 1, 1], padding='SAME')
+    conv = tf.nn.conv2d(norm2, kernel, [1, 1, 1, 1], padding='SAME')
     biases = _variable_on_cpu('biases', [128], tf.constant_initializer(0.1))
     bias = tf.nn.bias_add(conv, biases)
     conv3 = tf.nn.relu(bias, name=scope.name)
@@ -238,7 +238,7 @@ def inference(images):
   with tf.variable_scope('conv4') as scope:
     kernel = _variable_with_weight_decay('weights', shape=[5, 5, 128, 256],
                                          stddev=1e-4, wd=0.0)
-    conv = tf.nn.conv2d(norm1, kernel, [1, 1, 1, 1], padding='SAME')
+    conv = tf.nn.conv2d(norm3, kernel, [1, 1, 1, 1], padding='SAME')
     biases = _variable_on_cpu('biases', [256], tf.constant_initializer(0.1))
     bias = tf.nn.bias_add(conv, biases)
     conv4 = tf.nn.relu(bias, name=scope.name)
