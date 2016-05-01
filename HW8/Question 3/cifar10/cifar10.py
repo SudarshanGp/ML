@@ -306,8 +306,32 @@ def _add_loss_summaries(total_loss):
 
   return loss_averages_op
 
+def _add_accuracy_summaries(total_accuracy):
+  """Add summaries for losses in CIFAR-10 model.
 
-def train(total_loss, global_step):
+  Generates moving average for all losses and associated summaries for
+  visualizing the performance of the network.
+
+  Args:
+    total_loss: Total loss from loss().
+  Returns:
+    loss_averages_op: op for generating moving averages of losses.
+  """
+  # Compute the moving average of all individual losses and the total loss.
+  # loss_averages = tf.train.ExponentialMovingAverage(0.9, name='avg')
+  acc = tf.get_collection('accuracy')
+
+  # Attach a scalar summary to all individual losses and the total loss; do the
+  # same for the averaged version of the losses.
+  for l in acc + [total_accuracy]:
+    # Name each loss as '(raw)' and name the moving average version of the loss
+    # as the original loss name.
+    # tf.scalar_summary(l.op.name +' (raw)', l)
+    tf.scalar_summary(l.op.name, tf.reduce_mean(l))
+
+
+
+def train(total_loss, global_step, total_accuracy):
   """Train CIFAR-10 model.
 
   Create an optimizer and apply to all trainable variables. Add moving
@@ -334,7 +358,7 @@ def train(total_loss, global_step):
 
   # Generate moving averages of all losses and associated summaries.
   loss_averages_op = _add_loss_summaries(total_loss)
-
+  _add_accuracy_summaries(total_accuracy)
   # Compute gradients.
   with tf.control_dependencies([loss_averages_op]):
     opt = tf.train.GradientDescentOptimizer(lr)

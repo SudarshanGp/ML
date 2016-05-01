@@ -78,13 +78,14 @@ def train():
     accuracy = cifar10.accuracy(logits, labels)
     # Build a Graph that trains the model with one batch of examples and
     # updates the model parameters.
-    train_op = cifar10.train(loss, global_step)
+    train_op = cifar10.train(loss, global_step, accuracy)
 
     # Create a saver.
     saver = tf.train.Saver(tf.all_variables())
 
     # Build the summary operation based on the TF collection of Summaries.
     summary_op = tf.merge_all_summaries()
+    print(summary_op)
 
     # Build an initialization operation to run below.
     init = tf.initialize_all_variables()
