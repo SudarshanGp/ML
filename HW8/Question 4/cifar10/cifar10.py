@@ -222,7 +222,7 @@ def inference(images):
   with tf.variable_scope('conv3') as scope:
     kernel = _variable_with_weight_decay('weights', shape=[5, 5, 64, 128],
                                          stddev=1e-4, wd=0.0)
-    conv = tf.nn.conv2d(norm2, kernel, [1, 1, 1, 1], padding='SAME')
+    conv = tf.nn.conv2d(pool2, kernel, [1, 1, 1, 1], padding='SAME')
     biases = _variable_on_cpu('biases', [128], tf.constant_initializer(0.1))
     bias = tf.nn.bias_add(conv, biases)
     conv3 = tf.nn.relu(bias, name=scope.name)
@@ -235,26 +235,26 @@ def inference(images):
   pool3 = tf.nn.max_pool(norm3, ksize=[1, 3, 3, 1],
                          strides=[1, 2, 2, 1], padding='SAME', name='pool3')
 
-  with tf.variable_scope('conv4') as scope:
-    kernel = _variable_with_weight_decay('weights', shape=[5, 5, 128, 256],
-                                         stddev=1e-4, wd=0.0)
-    conv = tf.nn.conv2d(norm3, kernel, [1, 1, 1, 1], padding='SAME')
-    biases = _variable_on_cpu('biases', [256], tf.constant_initializer(0.1))
-    bias = tf.nn.bias_add(conv, biases)
-    conv4 = tf.nn.relu(bias, name=scope.name)
-    _activation_summary(conv4)
+  # with tf.variable_scope('conv4') as scope:
+  #   kernel = _variable_with_weight_decay('weights', shape=[5, 5, 128, 256],
+  #                                        stddev=1e-4, wd=0.0)
+  #   conv = tf.nn.conv2d(norm3, kernel, [1, 1, 1, 1], padding='SAME')
+  #   biases = _variable_on_cpu('biases', [256], tf.constant_initializer(0.1))
+  #   bias = tf.nn.bias_add(conv, biases)
+  #   conv4 = tf.nn.relu(bias, name=scope.name)
+  #   _activation_summary(conv4)
 
-  # norm3
-  norm4 = tf.nn.lrn(conv4, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
-                    name='norm3')
-  # pool3
-  pool4 = tf.nn.max_pool(norm4, ksize=[1, 3, 3, 1],
-                         strides=[1, 2, 2, 1], padding='SAME', name='pool4')
+  # # norm3
+  # norm4 = tf.nn.lrn(conv4, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
+  #                   name='norm4')
+  # # pool3
+  # pool4 = tf.nn.max_pool(norm4, ksize=[1, 3, 3, 1],
+  #                        strides=[1, 2, 2, 1], padding='SAME', name='pool4')
 
   # local3
   with tf.variable_scope('local3') as scope:
     # Move everything into depth so we can perform a single matrix multiply.
-    reshape = tf.reshape(pool4, [FLAGS.batch_size, -1])
+    reshape = tf.reshape(pool3, [FLAGS.batch_size, -1])
     dim = reshape.get_shape()[1].value
     weights = _variable_with_weight_decay('weights', shape=[dim, 384],
                                           stddev=0.04, wd=0.004)
@@ -332,8 +332,40 @@ def _add_loss_summaries(total_loss):
 
   return loss_averages_op
 
+def accuracy(logits, gt_label, scope='accuracy'):
+  with tf.variable_scope(scope):
+      pred_label = tf.argmax(logits, 1)
+      gt_label_64 = tf.to_int64(gt_label, name='ToInt64')
+      acc = 1.0 - tf.nn.zero_fraction(
+          tf.cast(tf.equal(pred_label, gt_label_64), tf.int64))
+  tf.add_to_collection('accuracy', acc)
+  return tf.add_n(tf.get_collection('accuracy'), name='total_accuracy')
 
-def train(total_loss, global_step):
+def _add_accuracy_summaries(total_accuracy):
+  """Add summaries for losses in CIFAR-10 model.
+
+  Generates moving average for all losses and associated summaries for
+  visualizing the performance of the network.
+
+  Args:
+    total_loss: Total loss from loss().
+  Returns:
+    loss_averages_op: op for generating moving averages of losses.
+  """
+  # Compute the moving average of all individual losses and the total loss.
+  # loss_averages = tf.train.ExponentialMovingAverage(0.9, name='avg')
+  acc = tf.get_collection('accuracy')
+
+  # Attach a scalar summary to all individual losses and the total loss; do the
+  # same for the averaged version of the losses.
+  for l in acc + [total_accuracy]:
+    # Name each loss as '(raw)' and name the moving average version of the loss
+    # as the original loss name.
+    # tf.scalar_summary(l.op.name +' (raw)', l)
+    tf.scalar_summary(l.op.name, tf.reduce_mean(l))
+
+
+def train(total_loss, global_step, total_accuracy):
   """Train CIFAR-10 model.
 
   Create an optimizer and apply to all trainable variables. Add moving
@@ -360,7 +392,7 @@ def train(total_loss, global_step):
 
   # Generate moving averages of all losses and associated summaries.
   loss_averages_op = _add_loss_summaries(total_loss)
-
+  _add_accuracy_summaries(total_accuracy)
   # Compute gradients.
   with tf.control_dependencies([loss_averages_op]):
     opt = tf.train.GradientDescentOptimizer(lr)
