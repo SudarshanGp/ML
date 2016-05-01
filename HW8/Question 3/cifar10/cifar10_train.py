@@ -101,7 +101,7 @@ def train():
 
     for step in xrange(FLAGS.max_steps):
       start_time = time.time()
-      _, loss_value, accuracy_value = sess.run([train_op, loss, total_accuracy])
+      _, loss_value, accuracy_value = sess.run([train_op, loss, accuracy])
       duration = time.time() - start_time
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
