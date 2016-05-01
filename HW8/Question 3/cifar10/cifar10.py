@@ -44,7 +44,7 @@ import tarfile
 from six.moves import urllib
 import tensorflow as tf
 
-from tensorflow.models.image.cifar10 import cifar10_input
+import cifar10_input
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -248,6 +248,18 @@ def inference(images):
 
   return softmax_linear
 
+def accuracy(logits, gt_label, scope='accuracy'):
+  with tf.variable_scope(scope):
+      pred_label = tf.argmax(logits, 1)
+      gt_label_64 = tf.to_int64(gt_label, name='ToInt64')
+      print(pred_label, "PRED")
+      print(gt_label_64, "GT")
+      print(tf.equal(pred_label, gt_label_64), "EQUAL")
+      acc = 1.0 - tf.nn.zero_fraction(
+          tf.cast(tf.equal(pred_label, gt_label_64), tf.int64))
+  tf.add_to_collection('accuracy', acc)
+  print(accuracy, 'accuracy')
+  return tf.add_n(tf.get_collection('accuracy'), name='accuracy')
 
 def loss(logits, labels):
   """Add L2Loss to all the trainable variables.
@@ -267,7 +279,8 @@ def loss(logits, labels):
       logits, labels, name='cross_entropy_per_example')
   cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')
   tf.add_to_collection('losses', cross_entropy_mean)
-
+  # accuracy_cal = accuracy(logits, labels)
+  
   # The total loss is defined as the cross entropy loss plus all of the weight
   # decay terms (L2 loss).
   return tf.add_n(tf.get_collection('losses'), name='total_loss')
