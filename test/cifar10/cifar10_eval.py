@@ -138,7 +138,7 @@ def evaluate():
 
     summary_writer = tf.train.SummaryWriter(FLAGS.eval_dir, g)
 
-    for i in range(70):
+    for i in range(700):
       eval_once(saver, summary_writer, top_k_op, summary_op)
       if FLAGS.run_once:
         break
