@@ -44,7 +44,7 @@ import tarfile
 from six.moves import urllib
 import tensorflow as tf
 
-from tensorflow.models.image.cifar10 import cifar10_input
+import cifar10_input
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -248,6 +248,14 @@ def inference(images):
 
   return softmax_linear
 
+def accuracy(logits, gt_label, scope='accuracy'):
+  with tf.variable_scope(scope):
+      pred_label = tf.argmax(logits, 1)
+      gt_label_64 = tf.to_int64(gt_label, name='ToInt64')
+      acc = 1.0 - tf.nn.zero_fraction(
+          tf.cast(tf.equal(pred_label, gt_label_64), tf.int64))
+  tf.add_to_collection('accuracy', acc)
+  return tf.add_n(tf.get_collection('accuracy'), name='total_accuracy')
 
 def loss(logits, labels):
   """Add L2Loss to all the trainable variables.
@@ -266,8 +274,7 @@ def loss(logits, labels):
   cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
       logits, labels, name='cross_entropy_per_example')
   cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')
-  tf.add_to_collection('losses', cross_entropy_mean)
-
+  tf.add_to_collection('losses', cross_entropy_mean)  
   # The total loss is defined as the cross entropy loss plus all of the weight
   # decay terms (L2 loss).
   return tf.add_n(tf.get_collection('losses'), name='total_loss')
@@ -299,8 +306,32 @@ def _add_loss_summaries(total_loss):
 
   return loss_averages_op
 
+def _add_accuracy_summaries(total_accuracy):
+  """Add summaries for losses in CIFAR-10 model.
 
-def train(total_loss, global_step):
+  Generates moving average for all losses and associated summaries for
+  visualizing the performance of the network.
+
+  Args:
+    total_loss: Total loss from loss().
+  Returns:
+    loss_averages_op: op for generating moving averages of losses.
+  """
+  # Compute the moving average of all individual losses and the total loss.
+  # loss_averages = tf.train.ExponentialMovingAverage(0.9, name='avg')
+  acc = tf.get_collection('accuracy')
+
+  # Attach a scalar summary to all individual losses and the total loss; do the
+  # same for the averaged version of the losses.
+  for l in acc + [total_accuracy]:
+    # Name each loss as '(raw)' and name the moving average version of the loss
+    # as the original loss name.
+    # tf.scalar_summary(l.op.name +' (raw)', l)
+    tf.scalar_summary(l.op.name, tf.reduce_mean(l))
+
+
+
+def train(total_loss, global_step, total_accuracy):
   """Train CIFAR-10 model.
 
   Create an optimizer and apply to all trainable variables. Add moving
@@ -327,7 +358,7 @@ def train(total_loss, global_step):
 
   # Generate moving averages of all losses and associated summaries.
   loss_averages_op = _add_loss_summaries(total_loss)
-
+  _add_accuracy_summaries(total_accuracy)
   # Compute gradients.
   with tf.control_dependencies([loss_averages_op]):
     opt = tf.train.GradientDescentOptimizer(lr)

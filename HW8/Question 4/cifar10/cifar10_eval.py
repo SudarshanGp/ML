@@ -41,15 +41,15 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from tensorflow.models.image.cifar10 import cifar10
+import cifar10
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('eval_dir', '/tmp/cifar10_eval',
+tf.app.flags.DEFINE_string('eval_dir', 'cifar10_eval',
                            """Directory where to write event logs.""")
 tf.app.flags.DEFINE_string('eval_data', 'test',
                            """Either 'test' or 'train_eval'.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', '/tmp/cifar10_train',
+tf.app.flags.DEFINE_string('checkpoint_dir', 'cifar10_train',
                            """Directory where to read model checkpoints.""")
 tf.app.flags.DEFINE_integer('eval_interval_secs',20,
                             """How often to run the eval.""")
@@ -138,7 +138,7 @@ def evaluate():
 
     summary_writer = tf.train.SummaryWriter(FLAGS.eval_dir, g)
 
-    for i in range(50):
+    for i in range(670):
       eval_once(saver, summary_writer, top_k_op, summary_op)
       if FLAGS.run_once:
         break
