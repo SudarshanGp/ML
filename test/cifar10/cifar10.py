@@ -222,8 +222,13 @@ def inference(images):
     kernel = _variable_with_weight_decay('weights', shape=[5, 5, 3,16],
                                          stddev=1e-4, wd=0.0)
     conv = tf.nn.conv2d(images, kernel, [1, 1, 1, 1], padding='SAME')
+    out_channels = 16
+    filter_shape = [5,5,16,16]
+    filter_ = weight_variable(filter_shape)
+    mean, var = tf.nn.moments(conv, axes=[0])
+    batch1 = tf.nn.batch_normalization(conv, mean, var, None, None, 0.001,name = "batch1")
     biases = _variable_on_cpu('biases', [16], tf.constant_initializer(0.0))
-    bias = tf.nn.bias_add(conv, biases)
+    bias = tf.nn.bias_add(batch1, biases)
     conv1 = tf.nn.relu(bias, name=scope.name)
     _activation_summary(conv1)
 
@@ -237,19 +242,25 @@ def inference(images):
   # out_channels = 16
   # filter_shape = [5,5,16,16]
   # filter_ = weight_variable(filter_shape)
-  mean, var = tf.nn.moments(pool1, axes=[0])
+  # mean, var = tf.nn.moments(conv1, axes=[0])
   # beta = tf.Variable(tf.zeros([out_channels]), name="beta")
   # gamma = weight_variable([out_channels], name="gamma")
   
-  batch1 = tf.nn.batch_normalization(
-      pool1, mean, var, None, None, 0.001)
+  # batch1 = tf.nn.batch_normalization(
+      # conv1, mean, var, None, None, 0.001)
+  # batch1 = tf.nn.relu(batch1)
   # conv2
   with tf.variable_scope('conv2') as scope:
     kernel = _variable_with_weight_decay('weights', shape=[5, 5, 16, 16],
                                          stddev=1e-4, wd=0.0)
-    conv = tf.nn.conv2d(batch1, kernel, [1, 1, 1, 1], padding='SAME')
+    conv = tf.nn.conv2d(norm1, kernel, [1, 1, 1, 1], padding='SAME')
+    out_channels = 16
+    filter_shape = [5,5,16,16]
+    filter_ = weight_variable(filter_shape)
+    mean, var = tf.nn.moments(conv, axes=[0])
+    batch2 = tf.nn.batch_normalization(conv, mean, var, None, None, 0.001,name = "batch2")
     biases = _variable_on_cpu('biases', [16], tf.constant_initializer(0.2))
-    bias = tf.nn.bias_add(conv, biases)
+    bias = tf.nn.bias_add(batch2, biases)
     conv2 = tf.nn.relu(bias, name=scope.name)
     _activation_summary(conv2)
 
@@ -261,18 +272,18 @@ def inference(images):
                          strides=[1, 2, 2, 1], padding='SAME', name='pool2')
 
     # conv2
-  out_channels = 16
-  filter_shape = [5,5,16,16]
-  filter_ = weight_variable(filter_shape)
-  mean, var = tf.nn.moments(pool2, axes=[0,1,2])
-  beta = tf.Variable(tf.zeros([out_channels]), name="beta")
-  gamma = weight_variable([out_channels], name="gamma")
+  # out_channels = 16
+  # filter_shape = [5,5,16,16]
+  # filter_ = weight_variable(filter_shape)
+  # mean, var = tf.nn.moments(pool2, axes=[0,1,2])
+  # beta = tf.Variable(tf.zeros([out_channels]), name="beta")
+  # gamma = weight_variable([out_channels], name="gamma")
   
-  batch_norm = tf.nn.batch_norm_with_global_normalization(
-      pool2, mean, var, beta, gamma, 0.001,
-      scale_after_normalization=True)
+  # batch_norm = tf.nn.batch_norm_with_global_normalization(
+  #     pool2, mean, var, beta, gamma, 0.001,
+  #     scale_after_normalization=True)
 
-  batch2 = tf.nn.relu(batch_norm)
+  # batch2 = tf.nn.relu(batch_norm)
 
   with tf.variable_scope('conv3') as scope:
     kernel = _variable_with_weight_decay('weights', shape=[5, 5, 16, 16],
