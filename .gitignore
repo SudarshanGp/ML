@@ -1,6 +1,8 @@
 *.gz
 *.npy
 train_log
+cifar10_eval/
+cifar10_train/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
