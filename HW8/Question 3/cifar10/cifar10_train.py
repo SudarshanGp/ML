@@ -51,7 +51,7 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('train_dir', 'cifar10_train',
                            """Directory where to write event logs """
                            """and checkpoint.""")
-tf.app.flags.DEFINE_integer('max_steps', 20000,
+tf.app.flags.DEFINE_integer('max_steps', 5000,
                             """Number of batches to run.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
@@ -70,11 +70,8 @@ def train():
     logits = cifar10.inference(images)
 
     # Calculate loss.
-    print("calling cifar 10 loss")
     loss = cifar10.loss(logits, labels)
-    print(loss)
-    print(labels, "labels")
-    print("CALLING Accuracy")
+
     accuracy = cifar10.accuracy(logits, labels)
     # Build a Graph that trains the model with one batch of examples and
     # updates the model parameters.
